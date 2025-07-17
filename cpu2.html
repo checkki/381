@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>CPU Graphics</title>
+    <style>
+        body{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        canvas {
+            border: 1px solid black;
+            scale: 3;
+            image-rendering: pixelated;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="myCanvas" width="200" height="200"></canvas>
+    <script>
+        // JavaScript code will go here
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+        const imageData = ctx.createImageData(canvas.width, canvas.height); // สำหรับเก็บข้อมูลพิกเซล
+        const data = imageData.data; // array ที่เก็บข้อมูลสีของพิกเซล (RGBA)
+
+        let x=0;
+        let y=0;
+        const index = (y * canvas.width + x) * 4;
+        data[index] = 255; // Red
+        data[index + 1] = 0; // Green
+        data[index + 2] = 0; // Blue
+        data[index + 3] = 255; // Alpha (ความโปร่งใส)
+        //เป็นarray1มิติ []
+        
+        ctx.putImageDate(imageData, 0, 0);//
+
+    </script>
+</body>
+
+</html>
+ 

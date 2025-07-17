@@ -1,0 +1,70 @@
+<html>
+<head>
+    <title>My First Three.js Cube</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // โค้ด Three.js ของเราจะมาที่นี่
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight); // กำหนดขนาดของ Renderer ให้เท่ากับขนาดหน้าจอเบราว์เซอร์
+        document.body.appendChild(renderer.domElement); // เพิ่ม Canvas ของ Renderer เข้าไปใน body ของ HTML
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 3;
+        camera.position.y = 1; //ยกกล้องขึ้นสูงจากพื้น
+        camera.position.x = 0; //ย้ายกล้องไปทางขวา
+
+        const geometry = new THREE.BoxGeometry(1, 1, 1); // สร้างกล่องขนาด 1x1x1 หน่วย
+        const cube = new THREE.Mesh(geometry);
+        scene.add(cube);
+        renderer.render(scene, camera);
+
+        // สร้างทรงกลม (sphere)
+        const geometry2 = new THREE.SphereGeometry(0.5, 32, 32);
+        const material2 = new THREE.MeshNormalMaterial();
+        const sphere = new THREE.Mesh(geometry2, material2);
+        sphere.position.x = 2; // ย้ายทรงกลมไปทางขวา
+        scene.add(sphere);
+
+        // render ฉาก
+        renderer.render(scene, camera);
+
+
+
+        /*const geometry2 = new THREE.BoxGeometry(1, 1, 1);
+        const material2 = new THREE.MeshNormalMaterial();
+        const cube2 = new THREE.Mesh(geometry2, material2);
+        cube2.position.x = 2;
+        scene.add(cube2);
+        renderer.render(scene, camera);
+
+        /*
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
+
+        const geometry = new THREE.BoxGeometry(1, 1, 1); // สร้างกล่องขนาด 1x1x1 หน่วย
+        const cube = new THREE.Mesh(geometry);
+
+        scene.add(cube);
+        renderer.render(scene, camera);
+        function animate(t) {
+            cube.rotation.x = t * 0.001; // หมุนกล่องตามแกน x
+            cube.rotation.y = t * 0.001; // หมุนกล่องตามแกน y
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate); // เรียกใช้ฟังก์ชัน animate ต่อไป
+        }
+        animate(0);*/
+    </script>
+</body>
+
+</html>
