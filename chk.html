@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>HDRI Scene (no gun)</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas { display: block; }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/RGBELoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+</head>
+<body>
+<script>
+(() => {
+  const scene = new THREE.Scene();
+
+  // Renderer
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  document.body.appendChild(renderer.domElement);
+
+  // Camera + Controls
+  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+  camera.position.set(0, 2, 5);
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.target.set(0, 0.5, 0);
+  controls.enableDamping = true;
+
+  // Texture loader
+  const textureLoader = new THREE.TextureLoader();
+
+  // Background
+  const bg = textureLoader.load("https://checkki.github.io/381/Sport.jpg");
+  scene.background = bg;
+
+  // HDRI environment
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  new THREE.RGBELoader()
+    .setDataType(THREE.UnsignedByteType)
+    .load("https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/venice_sunset_1k.hdr", (hdr) => {
+      const envMap = pmrem.fromEquirectangular(hdr).texture;
+      scene.environment = envMap;
+      hdr.dispose();
+      pmrem.dispose();
+    });
+
+  // Lights
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+  dirLight.position.set(5, 10, 5);
+  dirLight.castShadow = true;
+  dirLight.shadow.mapSize.set(2048, 2048);
+  dirLight.shadow.camera.near = 0.5;
+  dirLight.shadow.camera.far = 50;
+  dirLight.shadow.camera.left = -10;
+  dirLight.shadow.camera.right = 10;
+  dirLight.shadow.camera.top = 10;
+  dirLight.shadow.camera.bottom = -10;
+  dirLight.shadow.bias = -0.0001;
+  scene.add(dirLight);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+
+  // Ground
+  const groundTex = textureLoader.load("https://checkki.github.io/381/Sport.jpg");
+  groundTex.wrapS = groundTex.wrapT = THREE.RepeatWrapping;
+  groundTex.repeat.set(1,1);
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(20,20),
+    new THREE.MeshStandardMaterial({ map: groundTex, roughness:0.7, metalness:0.2 })
+  );
+  ground.rotation.x = -Math.PI/2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  // Image plane (ตัวเอง) — ขยับไปซ้ายตามที่ต้องการ
+  const myTexture = textureLoader.load('https://checkki.github.io/381/check.jpg');
+  const myPlane = new THREE.Mesh(
+    new THREE.PlaneGeometry(1, 1.5),
+    new THREE.MeshBasicMaterial({ map: myTexture, transparent:true })
+  );
+  myPlane.scale.set(1.5,1.5,1.5);
+  myPlane.position.set(4, 0.75, -4);
+  myPlane.rotation.y = -Math.PI/6;
+  scene.add(myPlane);
+
+  // (ไม่มีปืนแล้ว)
+
+  // Load name (ตัวอักษร) — ขนาดเล็ก และวางตำแหน่งตามต้องการ
+  let nameObjRef = null;
+  let nameDir = 1;
+  const nameSpeed = 0.005;
+  const nameLoader = new THREE.OBJLoader();
+  nameLoader.load("https://checkki.github.io/381/name.obj", (nameObj)=>{
+    nameObj.scale.set(0.1,0.1,0.1);
+    nameObj.position.set(-1, 0, 0); // ขยับไปทางซ้ายเริ่มต้น
+    nameObj.traverse((child)=>{
+      if(child.isMesh){
+        child.material = new THREE.MeshStandardMaterial({
+          color:0x000000,
+          metalness:0.3,
+          roughness:0.4
+        });
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    scene.add(nameObj);
+    nameObjRef = nameObj;
+  });
+
+  // Animate
+  function animate(){
+    requestAnimationFrame(animate);
+
+    // ถ้าต้องการให้ตัวอักษรขยับซ้าย-ขวา ให้เปิดส่วนนี้ (ตอนนี้เปิดไว้)
+    // if(nameObjRef){
+    //   nameObjRef.position.x += nameDir * nameSpeed;
+    //   if(nameObjRef.position.x > 0 || nameObjRef.position.x < -2){
+    //     nameDir *= -1;
+    //   }
+    // }
+
+    controls.update();
+    renderer.render(scene,camera);
+  }
+  animate();
+
+  // Resize
+  window.addEventListener("resize", ()=>{
+    camera.aspect = window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+})();
+</script>
+</body>
+</html>
