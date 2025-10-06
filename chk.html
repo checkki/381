@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>HDRI Scene + Gun Rotate</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas { display: block; }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/RGBELoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/MTLLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+</head>
+<body>
+<script>
+(() => {
+  const scene = new THREE.Scene();
+
+  // Renderer
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  document.body.appendChild(renderer.domElement);
+
+  // Camera + Controls
+  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+  camera.position.set(0, 2, 5);
+  camera.lookAt(0, 0, 0);
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.target.set(0, 0.5, 0);
+  controls.enableDamping = true;
+
+  // Texture loader
+  const textureLoader = new THREE.TextureLoader();
+
+  // Background
+  const bg = textureLoader.load("https://checkki.github.io/381/Sport.jpg");
+  scene.background = bg;
+
+  // HDRI environment
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  new THREE.RGBELoader()
+    .setDataType(THREE.UnsignedByteType)
+    .load("https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/venice_sunset_1k.hdr", (hdr) => {
+      const envMap = pmrem.fromEquirectangular(hdr).texture;
+      scene.environment = envMap;
+      hdr.dispose();
+      pmrem.dispose();
+    });
+
+  // Lights
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+  dirLight.position.set(5, 10, 5);
+  dirLight.castShadow = true;
+  dirLight.shadow.mapSize.set(2048, 2048);
+  dirLight.shadow.camera.near = 0.5;
+  dirLight.shadow.camera.far = 50;
+  dirLight.shadow.camera.left = -10;
+  dirLight.shadow.camera.right = 10;
+  dirLight.shadow.camera.top = 10;
+  dirLight.shadow.camera.bottom = -10;
+  dirLight.shadow.bias = -0.0001;
+  scene.add(dirLight);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+
+  // Ground
+  const groundTex = textureLoader.load("https://checkki.github.io/381/Sport.jpg");
+  groundTex.wrapS = groundTex.wrapT = THREE.RepeatWrapping;
+  groundTex.repeat.set(1,1);
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(20,20),
+    new THREE.MeshStandardMaterial({ map: groundTex, roughness:0.7, metalness:0.2 })
+  );
+  ground.rotation.x = -Math.PI/2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  // Image plane (ตัวเอง)
+    const myTexture = textureLoader.load('https://checkki.github.io/381/check.jpg');
+    const myPlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(1, 1.5),
+        new THREE.MeshBasicMaterial({ map: myTexture, transparent:true })
+    );
+        myPlane.scale.set(1.5,1.5,1.5);
+        myPlane.position.set(4, 0.75, -4); // <-- เลื่อนไปซ้าย
+        myPlane.rotation.y = -Math.PI/6;
+        scene.add(myPlane);
+
+
+  // Load gun + name
+  let gun = null;
+  const gunSpinSpeed = 0.01;
+
+  const gunLoader = new THREE.OBJLoader();
+  gunLoader.load("https://checkki.github.io/381/gun_gun.obj", (gunObj) => {
+    gunObj.traverse((child)=>{
+      if(child.isMesh){
+        child.material = new THREE.MeshStandardMaterial({
+          color:0x999999,
+          roughness:0.6,
+          metalness:0.3
+        });
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    gunObj.scale.set(0.25,0.25,0.25);
+    gunObj.position.set(0,0.15,0);
+    scene.add(gunObj);
+    gun = gunObj;
+
+    // Load name.obj
+    const nameLoader = new THREE.OBJLoader();
+    nameLoader.load("https://checkki.github.io/381/name.obj", (nameObj)=>{
+      // ปรับตัวอักษรให้เล็กลง
+      nameObj.scale.set(0.1,0.1,0.1); // <-- ปรับเล็กลง
+      nameObj.position.set(0,0,0);
+      nameObj.traverse((child)=>{
+        if(child.isMesh){
+          child.material = new THREE.MeshStandardMaterial({
+            color:0x000000,
+            metalness:0.3,
+            roughness:0.4
+          });
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+      scene.add(nameObj);
+    });
+  });
+
+  // Animate
+  function animate(){
+    requestAnimationFrame(animate);
+    if(gun) gun.rotation.y += gunSpinSpeed;
+    controls.update();
+    renderer.render(scene,camera);
+  }
+  animate();
+
+  // Resize
+  window.addEventListener("resize", ()=>{
+    camera.aspect = window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+})();
+</script>
+</body>
+</html>
